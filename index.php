@@ -1,0 +1,398 @@
+<?php
+session_start();
+if (!isset($_SESSION["login"])) {
+    header("Location: login.php");
+    exit;
+}
+
+require 'function.php';
+
+$jumlahDataPerHalaman = 3;
+$halamanAktif = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
+$dataAwal = ($halamanAktif - 1) * $jumlahDataPerHalaman;
+
+$keyword = isset($_POST['keyword']) ? $_POST['keyword'] : '';
+$keyword_safe = mysqli_real_escape_string($conn, $keyword);
+
+$where = '';
+if (!empty($keyword_safe)) {
+    $where = "WHERE 
+                buku.judul LIKE '%$keyword_safe%' OR
+                kategori.nama_kategori LIKE '%$keyword_safe%' OR
+                buku.penulis LIKE '%$keyword_safe%' OR
+                buku.penerbit LIKE '%$keyword_safe%' OR
+                buku.tahun_terbit LIKE '%$keyword_safe%'";
+}
+
+$totalDataQuery = "SELECT COUNT(*) AS total FROM buku 
+                   INNER JOIN kategori ON buku.id_kategori = kategori.id_kategori
+                   $where";
+$totalDataResult = mysqli_query($conn, $totalDataQuery);
+$totalDataRow = mysqli_fetch_assoc($totalDataResult);
+$totalData = $totalDataRow['total'];
+$totalHalaman = ceil($totalData / $jumlahDataPerHalaman);
+
+$dataQuery = "SELECT buku.*, kategori.nama_kategori 
+              FROM buku 
+              INNER JOIN kategori ON buku.id_kategori = kategori.id_kategori
+              $where
+              ORDER BY tanggal_input DESC 
+              LIMIT $dataAwal, $jumlahDataPerHalaman";
+
+$buku = query($dataQuery);
+?>
+
+<!doctype html>
+<html lang="en">
+<!--begin::Head-->
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>SIMBS | Sistem Informasi Manajemen Buku Sederhana</title>
+
+    <!--begin::Accessibility Meta Tags-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+    <!--end::Accessibility Meta Tags-->
+
+    <!--begin::Primary Meta Tags-->
+    <meta name="title" content="AdminLTE v4 | Dashboard" />
+    <meta name="author" content="ColorlibHQ" />
+    <meta
+        name="description"
+        content="AdminLTE is a Free Bootstrap 5 Admin Dashboard, 30 example pages using Vanilla JS. Fully accessible with WCAG 2.1 AA compliance." />
+    <meta
+        name="keywords"
+        content="bootstrap 5, bootstrap, bootstrap 5 admin dashboard, bootstrap 5 dashboard, bootstrap 5 charts, bootstrap 5 calendar, bootstrap 5 datepicker, bootstrap 5 tables, bootstrap 5 datatable, vanilla js datatable, colorlibhq, colorlibhq dashboard, colorlibhq admin dashboard, accessible admin panel, WCAG compliant" />
+    <!--end::Primary Meta Tags-->
+
+    <!--begin::Accessibility Features-->
+    <!-- Skip links will be dynamically added by accessibility.js -->
+    <meta name="supported-color-schemes" content="light dark" />
+    <link rel="preload" href="dist/css/adminlte.css" as="style" />
+    <!--end::Accessibility Features-->
+
+    <!--begin::Fonts-->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
+        integrity="sha256-tXJfXfp6Ewt1ilPzLDtQnJV4hclT9XuaZUKyUvmyr+Q="
+        crossorigin="anonymous"
+        media="print"
+        onload="this.media='all'" />
+    <!--end::Fonts-->
+
+    <!--begin::Third Party Plugin(OverlayScrollbars)-->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css"
+        crossorigin="anonymous" />
+    <!--end::Third Party Plugin(OverlayScrollbars)-->
+
+    <!--begin::Third Party Plugin(Bootstrap Icons)-->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+        crossorigin="anonymous" />
+    <!--end::Third Party Plugin(Bootstrap Icons)-->
+
+    <!--begin::Required Plugin(AdminLTE)-->
+    <link rel="stylesheet" href="dist/css/adminlte.min.css" />
+    <!--end::Required Plugin(AdminLTE)-->
+
+    <!-- apexcharts -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.css"
+        integrity="sha256-4MX+61mt9NVvvuPjUWdUdyfZfxSB1/Rf9WtqRHgG5S0="
+        crossorigin="anonymous" />
+
+    <!-- jsvectormap -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css"
+        integrity="sha256-+uGLJmmTKOqBr+2E6KDYs/NRsHxSkONXFHUL0fy2O/4="
+        crossorigin="anonymous" />
+</head>
+<!--end::Head-->
+<!--begin::Body-->
+
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <!--begin::App Wrapper-->
+    <div class="app-wrapper">
+        <!--begin::Header-->
+        <nav class="app-header navbar navbar-expand bg-body">
+            <!--begin::Container-->
+            <div class="container-fluid">
+                <!--begin::Start Navbar Links-->
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">
+                            <i class="bi bi-list"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item d-none d-md-block">
+                        <a href="#" class="nav-link">Sistem Informasi Manajemen Buku Sederhana</a>
+                    </li>
+                </ul>
+                <!--end::Start Navbar Links-->
+
+                <!--begin::End Navbar Links-->
+                <ul class="navbar-nav ms-auto">
+
+                    <!--begin::User Menu Dropdown-->
+                    <li class="nav-item dropdown user-menu">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                            <span class="d-none d-md-inline" style="font-weight: bold;">
+                                Selamat datang, <?= $_SESSION["username"]; ?>! <i class="bi bi-person-lines-fill"></i>
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
+                            <!--begin::User Image-->
+                            <li class="user-header text-bg-primary">
+                                <img
+                                    src="img/user.jpg"
+                                    class="rounded-circle shadow"
+                                    alt="User Image" />
+                                <p>
+                                    <?= $_SESSION["username"]; ?>
+                                    <small>- Pengguna SIMBS Aktif -</small>
+                                </p>
+                            </li>
+                            <!--end::User Image-->
+
+                            <!--begin::Menu Footer-->
+                            <li class="user-footer">
+                                <a href="#" class="btn btn-default btn-flat">Profile</a>
+                                <a href="logout.php" class="btn btn-default btn-flat float-end">Log out</a>
+                            </li>
+                            <!--end::Menu Footer-->
+                        </ul>
+                    </li>
+                    <!--end::User Menu Dropdown-->
+                </ul>
+                <!--end::End Navbar Links-->
+            </div>
+            <!--end::Container-->
+        </nav>
+        <!--end::Header-->
+        <!--begin::Sidebar-->
+        <aside class="app-sidebar shadow" data-bs-theme="dark" style="background-color: #9e81dbff;">
+            <!--begin::Sidebar Brand-->
+            <div class="sidebar-brand">
+                <!--begin::Brand Link-->
+                <a href="index.php" class="brand-link" style="color: white;">
+                    <!--begin::Brand Image-->
+                    <i class="bi bi-journals"></i>
+                    <!--end::Brand Image-->
+                    <!--begin::Brand Text-->
+                    <span class="brand-text fw-light">SIMBS</span>
+                    <!--end::Brand Text-->
+                </a>
+                <!--end::Brand Link-->
+            </div>
+            <!--end::Sidebar Brand-->
+            <!--begin::Sidebar Wrapper-->
+            <div class="sidebar-wrapper">
+                <nav class="mt-2">
+                    <!--begin::Sidebar Menu-->
+                    <ul
+                        class="nav sidebar-menu flex-column"
+                        data-lte-toggle="treeview"
+                        role="navigation"
+                        aria-label="Main navigation"
+                        data-accordion="false"
+                        id="navigation">
+                        <li class="nav-item menu-open">
+                            <a href="#" class="nav-link active">
+                                <i class="bi bi-book-half"></i>
+                                <p>
+                                    Informasi Data Buku
+                                    <i class="nav-arrow bi bi-chevron-right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="./index.php" class="nav-link active">
+                                        <i class="bi bi-circle-fill"></i>
+                                        <p>Data Buku</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="./index2.php" class="nav-link">
+                                        <i class="nav-icon bi bi-circle"></i>
+                                        <p>Kategori Buku</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-header">AUTENTIKASI</li>
+                        <li class="nav-item">
+                            <a href="logout.php" class="nav-link">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <p>Log Out</p>
+                            </a>
+                        </li>
+                    </ul>
+                    <!--end::Sidebar Menu-->
+                </nav>
+            </div>
+            <!--end::Sidebar Wrapper-->
+        </aside>
+        <!--end::Sidebar-->
+
+        <!-- ====================================================================================== -->
+        <!--  MAIN SECTION -->
+        <!-- ====================================================================================== -->
+
+        <!--begin::App Main-->
+        <main class="app-main">
+            <!--begin::App Content Header-->
+            <div class="app-content-header">
+                <!--begin::Container-->
+                <div class="container-fluid">
+                    <!--begin::Row-->
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <h3 class="mb-3">Informasi Data Buku</h3>
+                            <a href="tambah_data.php">
+                                <button class="btn-sm btn btn-primary ">Tambah Data Buku</button>
+                            </a>
+                        </div>
+                        <div class="col-sm-6 d-flex flex-column align-items-end">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="#">Data Buku</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Kategori Buku</li>
+                            </ol>
+                            <form class="mt-2" method="POST" action="">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="keyword" placeholder="Fiksi/NonFiksi/Komik/Manga/Novel/Autobiografi/Self-Improvement" value="">
+                                    <button class="btn btn-primary" type="submit" name="tombol_search">
+                                        <i class="bi bi-search"></i> Cari
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <!--end::Row-->
+                </div>
+                <!--end::Container-->
+            </div>
+            <!--end::App Content Header-->
+
+            <!--begin::App Content-->
+            <div class="app-content">
+                <!--begin::Container-->
+                <div class="container-fluid">
+                    <!--begin::Row-->
+                    <div class="row">
+                        <!--begin::Col-->
+                        <div class="col">
+                            <!-- =============== ISI TABEL ADA DI SINI =============== -->
+                            <table class="table table-striped table-hover">
+                                <tr>
+                                    <th>No.</th>
+                                    <th>ID buku</th>
+                                    <th>Judul buku</th>
+                                    <th>Deskripsi</th>
+                                    <th>Penulis</th>
+                                    <th>Penerbit</th>
+                                    <th>Tahun Terbit</th>
+                                    <th>Kategori</th>
+                                    <th>Tanggal Input</th>
+                                    <th>Aksi</th>
+                                    <?php $no = 1; ?>
+                                    <?php foreach ($buku as $data): ?>
+                                <tr>
+                                    <td><?= $no ?></td>
+                                    <td><?= ($data['id_buku']) ?></td>
+                                    <td><?= ($data['judul']) ?></td>
+                                    <td><?= ($data['deskripsi']) ?></td>
+                                    <td><?= ($data['penulis']) ?></td>
+                                    <td><?= ($data['penerbit']) ?></td>
+                                    <td><?= ($data['tahun_terbit']) ?></td>
+                                    <td><?= ($data['nama_kategori']) ?></td>
+                                    <td><?= ($data['tanggal_input']) ?></td>
+                                    <td>
+                                        <a href="ubah_data.php?id=<?= ($data['id_buku']) ?>" class="btn btn-sm btn-success">Edit</a>
+                                        <a href="hapus_data.php?id=<?= ($data['id_buku']) ?>" class="btn btn-sm btn-danger">Hapus</a>
+                                    </td>
+                                </tr>
+                                <?php $no++; ?>
+                            <?php endforeach; ?>
+                            </tbody>
+                            </table>
+                            </table>
+                            <nav aria-label="Page navigation example" class="d-flex justify-content-center mt-3">
+                                <ul class="pagination">
+                                    <?php if ($halamanAktif > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?halaman=<?= $halamanAktif - 1; ?>" aria-label="Previous">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+
+                                    <?php for ($i = 1; $i <= $totalHalaman; $i++): ?>
+                                        <li class="page-item <?= ($i == $halamanAktif) ? 'active' : ''; ?>">
+                                            <a class="page-link" href="?halaman=<?= $i; ?>"><?= $i; ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+
+                                    <?php if ($halamanAktif < $totalHalaman): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?halaman=<?= $halamanAktif + 1; ?>" aria-label="Next">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
+                        </div>
+                        <!--end::Col-->
+                    </div>
+                    <!--end::Row-->
+                </div>
+                <!--end::Container-->
+            </div>
+            <!--end::App Content-->
+        </main>
+        <!--end::App Main-->
+        <!--begin::Footer-->
+        <footer class="app-footer">
+            <!--begin::To the end-->
+            <div class="float-end d-none d-sm-inline"></div>
+            <!--end::To the end-->
+            <!--begin::Copyright-->
+            <strong>
+                &copy;2025. Sistem Informasi Manajemen Buku Sederhana. All rights reserved.&nbsp;
+            </strong>
+            <!--end::Copyright-->
+        </footer>
+        <!--end::Footer-->
+    </div>
+    <!--end::App Wrapper-->
+    <!--begin::Script-->
+    <!--begin::Third Party Plugin(OverlayScrollbars)-->
+    <script
+        src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
+        crossorigin="anonymous"></script>
+    <!--end::Third Party Plugin(OverlayScrollbars)--><!--begin::Required Plugin(popperjs for Bootstrap 5)-->
+    <script
+        src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        crossorigin="anonymous"></script>
+    <!--end::Required Plugin(popperjs for Bootstrap 5)--><!--begin::Required Plugin(Bootstrap 5)-->
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js"
+        crossorigin="anonymous"></script>
+    <!--end::Required Plugin(Bootstrap 5)--><!--begin::Required Plugin(AdminLTE)-->
+    <script src="dist/js/adminlte.js"></script>
+    <!--end::Required Plugin(AdminLTE)--><!--begin::OverlayScrollbars Configure-->
+
+</body>
+<!--end::Body-->
+
+</html>
